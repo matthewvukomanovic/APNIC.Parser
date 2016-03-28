@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -77,8 +78,10 @@ namespace apnicparser
 
         static void Main(string[] args)
         {
+            // The readme file for the original release is ftp://ftp.apnic.net/pub/apnic/stats/apnic/README.TXT
+
             //Downloaded from ftp://ftp.apnic.net/public/apnic/stats/apnic/delegated-apnic-extended-latest
-            string file = @"c:\temp\delegated-apnic-extended-latest";
+            string file = @":";
             string[] limitLocaions = { "au", };
             string[] limitTypes = { "ipv4", };
 
@@ -86,6 +89,38 @@ namespace apnicparser
             {
                 file = args[0];
             }
+
+            if (file == ":")
+            {
+                file = "ftp://ftp.apnic.net/public/apnic/stats/apnic/delegated-apnic-extended-latest";
+            }
+
+            if (file.Contains("://"))
+            {
+                var tempFile = "delegated-apnic-extended-latest.temp";
+                var tempCachedFile = "delegated-apnic-extended-latest.cached";
+                var tempCacheInfo = new FileInfo(tempCachedFile);
+                if (!tempCacheInfo.Exists || tempCacheInfo.LastWriteTime < DateTime.Now.AddDays(-1))
+                {
+                    using (var client = new WebClient())
+                    {
+                        if (File.Exists(tempFile))
+                        {
+                            File.Delete(tempFile);
+                        }
+                        client.DownloadFile(file, tempFile);
+                        if (tempCacheInfo.Exists)
+                        {
+                            tempCacheInfo.Delete();
+                        }
+
+                        File.Move(tempFile, tempCachedFile);
+                    }
+                }
+                file = tempCachedFile;
+            }
+
+
 
             if (args.Length > 1)
             {
@@ -97,6 +132,15 @@ namespace apnicparser
             {
                 var limitType = args[2].ToLower();
                 limitTypes = limitType.Split(new[] { ',', ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+            }
+
+            bool shortOutput = true;
+
+            if (args.Length > 3)
+            {
+                var outputType = args[3].ToLower();
+
+                shortOutput = outputType != "long" && outputType != "l";
             }
 
             if (!File.Exists(file))
@@ -135,9 +179,6 @@ namespace apnicparser
                 }
 
 
-                Write(place + '|');
-                Write(type + '|');
-
                 var numberAssigned = uint.Parse(numberAssignedStr);
                 var numberAssignedMinus1 = numberAssigned - 1;
 
@@ -151,7 +192,9 @@ namespace apnicparser
                 {
                     if (originalBits != numberAssigned)
                     {
+#if DEBUG
                         Debugger.Break();
+#endif
                     }
                     var ipAddressParts = rangeStartStr.Split('.');
                     byte[] parts = new byte[4];
@@ -183,22 +226,25 @@ namespace apnicparser
                     var startIp = new IPAddress(start);
                     var endIp = new IPAddress(end);
 
-                    Write(rangeStartStr + "/" + significantBits + "|");
-
-                    Write(startIp + "|");
-                    Write(endIp + "|");
-
-                    Write(numberAssignedStr + '|');
-
-
+                    if (!shortOutput)
+                    {
+                        Write(line + "|");
+                        Write(startIp + "|");
+                        Write(endIp + "|");
+                    }
+                    Write(rangeStartStr + "/" + significantBits);
 
                     if (rangeStartStr != startIp.ToString())
                     {
+#if DEBUG
                         Debugger.Break();
+#endif
                     }
                 }
                 else
                 {
+                    Write(place + '|');
+                    Write(type + '|');
                     Write(rangeStartStr + '|');
                     Write(significantBits + "|");
                     Write(numberAssignedStr + '|');
@@ -207,24 +253,24 @@ namespace apnicparser
                 WriteLine();
             }
 
-            WriteLine("Filled Ranges");
+            //WriteLine("Filled Ranges");
             foreach (var range in ranges.FilledRanges)
             {
                 var total = range.Total;
                 var startIp = new IPAddress(ReverseBytes(range.Start));
                 var endIp = new IPAddress(ReverseBytes(range.End));
 
-                WriteLine(startIp + "-" + endIp  + "-" + total);
+               // WriteLine(startIp + "-" + endIp  + "-" + total);
             }
 
-            WriteLine("Missing Ranges");
+            //WriteLine("Missing Ranges");
             foreach (var range in ranges.MissingRanges)
             {
                 var total = range.Total;
                 var startIp = new IPAddress(ReverseBytes(range.Start));
                 var endIp = new IPAddress(ReverseBytes(range.End));
 
-                WriteLine(startIp + "-" + endIp + "-" + total);
+               // WriteLine(startIp + "-" + endIp + "-" + total);
             }
 
             SetClipboard(sb.ToString());
