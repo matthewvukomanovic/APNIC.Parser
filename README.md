@@ -4,6 +4,8 @@ Simply to take the format which APNIC releases and turn it into a more useful fo
 # Running the file
 Just running the file will download the latest version from the ftp and output AU location ipv4 address ranges in en.wikipedia.org/wiki/CIDR_notation format.
 
+Output is on both the console and put onto the clipboard
+
 # Usage is
 apnicparser [filename [location,location,... [ type,type,... [long|l]]]
 
