@@ -18,6 +18,7 @@ namespace apnicparser
     {
         static StringBuilder sb = new StringBuilder();
 
+#if DEBUG
         public class Range
         {
             public uint Start;
@@ -75,6 +76,7 @@ namespace apnicparser
                 }
             }
         }
+#endif
 
         static void Main(string[] args)
         {
@@ -151,7 +153,9 @@ namespace apnicparser
             var lines = File.ReadAllLines(file);
             lines = lines.Where(l => !l.StartsWith("#") && !l.Contains("*") && !l.Contains("-") && !l.Contains("+")).ToArray();
 
+#if DEBUG
             RangeGaps ranges = new RangeGaps();
+#endif
             foreach (var line in lines)
             {
                 var sections = line.Split('|');
@@ -217,7 +221,9 @@ namespace apnicparser
                     var startReversed = ReverseBytes(start);
                     var endReversed = ReverseBytes(end);
 
+#if DEBUG
                     ranges.AddNewRange(startReversed, endReversed);
+#endif
 
                     var startIp = new IPAddress(start);
                     var endIp = new IPAddress(end);
@@ -227,7 +233,7 @@ namespace apnicparser
                         Write(line + "|");
                         Write(startIp + "|");
                         Write(endIp + "|");
-                        Write(startIp + " SUB " + mask + "|");
+                        Write(startIp + "/" + mask + "|");
                     }
                     Write(rangeStartStr + "/" + significantBits);
 
@@ -250,25 +256,27 @@ namespace apnicparser
                 WriteLine();
             }
 
-            //WriteLine("Filled Ranges");
+#if DEBUG
+            WriteLine("Filled Ranges");
             foreach (var range in ranges.FilledRanges)
             {
                 var total = range.Total;
                 var startIp = new IPAddress(ReverseBytes(range.Start));
                 var endIp = new IPAddress(ReverseBytes(range.End));
 
-               // WriteLine(startIp + "-" + endIp  + "-" + total);
+                WriteLine(startIp + "-" + endIp  + "-" + total);
             }
 
-            //WriteLine("Missing Ranges");
+            WriteLine("Missing Ranges");
             foreach (var range in ranges.MissingRanges)
             {
                 var total = range.Total;
                 var startIp = new IPAddress(ReverseBytes(range.Start));
                 var endIp = new IPAddress(ReverseBytes(range.End));
 
-               // WriteLine(startIp + "-" + endIp + "-" + total);
+                WriteLine(startIp + "-" + endIp + "-" + total);
             }
+#endif
 
             SetClipboard(sb.ToString());
 
