@@ -120,8 +120,6 @@ namespace apnicparser
                 file = tempCachedFile;
             }
 
-
-
             if (args.Length > 1)
             {
                 var limitLocation = args[1].ToLower();
@@ -208,15 +206,13 @@ namespace apnicparser
 
                     var ipAddressAsInt = ((uint)parts[3] << 24 | (uint)parts[2] << 16 | (uint)parts[1] << 8 | (uint)parts[0]);
 
-                    var endPower2 = ReverseBytes(numberAssignedMinus1);
+                    var endPower = ReverseBytes(numberAssignedMinus1);
+                    var startPower = ~endPower;
 
-                    var startPower2 = ~endPower2;
+                    var start = startPower & ipAddressAsInt;
+                    var end = start | endPower;
 
-
-                    var startPower = (uint)Math.Pow(2, significantBits) - 1;
-                    var endPower = ~startPower;
-                    var start = startPower2 & ipAddressAsInt;
-                    var end = start | endPower2;
+                    var mask = new IPAddress(startPower);
 
                     var startReversed = ReverseBytes(start);
                     var endReversed = ReverseBytes(end);
@@ -231,6 +227,7 @@ namespace apnicparser
                         Write(line + "|");
                         Write(startIp + "|");
                         Write(endIp + "|");
+                        Write(startIp + " SUB " + mask + "|");
                     }
                     Write(rangeStartStr + "/" + significantBits);
 
