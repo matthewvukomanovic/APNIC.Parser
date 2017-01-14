@@ -1,26 +1,84 @@
 # APNIC.Parser
-Simply to take the format which APNIC releases and turn it into a more useful format
+Simply to take the format which APNIC releases and turn it into a more useful format (http://en.wikipedia.org/wiki/CIDR_notation)
 
-# Running the file
-Just running the file will download the latest version from the ftp and output AU location ipv4 address ranges in http://en.wikipedia.org/wiki/CIDR_notation format.
+The default options are:
+- download source file from ftp://ftp.apnic.net/public/apnic/stats/apnic/delegated-apnic-extended-latest
+- cache the file at delegated-apnic-extended-latest.cached
+- if the cache is older than a day it downloads it again
+- output to the console
+- output to the clipboard
+- limited to the AU location
+- limited to the ipv4 type
 
-Output is on both the console and put onto the clipboard
+# Output
+## IPV4
+It takes a line like the following
+```
+apnic|AU|ipv4|1.0.0.0|256|20110811|assigned|A91872ED
+```
+and produces the following output
+```
+1.0.0.0/24
+```
+or in verbose mode
+```
+apnic|AU|ipv4|1.0.0.0|256|20110811|assigned|A91872ED|1.0.0.0|1.0.0.255|1.0.0.0/255.255.255.0|1.0.0.0/24
+```
 
-# Usage is
-apnicparser [filename [location,location,... [ type,type,... [long|l [separator]]]]
+## IPV6
 
-filename: can be a relative filename to the application, complete filename, or a web URI, or special name ":"
+It takes a line like the following
+```
+apnic|AU|ipv6|2001:360::|35|20011211|allocated|A916A983
+```
+and produces the following output
+```
+2001:360::/35
+```
+or in verbose mode
+```
+apnic|AU|ipv6|2001:360::|35|20011211|allocated|A916A983|2001:360::/35
+```
 
-  If filename is ":" then the filename defaults to ftp://ftp.apnic.net/public/apnic/stats/apnic/delegated-apnic-extended-latest
+## ASN
 
-  Any web site download will cache the results in a local file called delegated-apnic-extended-latest.cached through a temp file delegated-apnic-extended-latest.temp so if either of those exist then they will be deleted
+It takes a line like the following
+```
+apnic|AU|asn|7701|4|19971222|allocated|A9172506
+```
+and produces the following output
+```
+7701|7704|4
+```
+or in verbose mode
+```
+apnic|AU|asn|7701|4|19971222|allocated|A9172506|7701|7704|4
+```
 
-  As long as the cached file is less than a day old it will not be deleted, otherwise it will be re-downloaded
+# Options
+In this version the options changed.
 
-location: is a comma separated list of the locations which should be included in the result
-
-type: is a comma separated list of the types which should be included in the result
-
-long or l : means that a longer more verbose form of the output should be output
-
-separator : the characters to separate the entries, this defaults to a newline but can be replaced with something like  " " to have spaces instead
+Available options are:
+```
+  -f, --filename=VALUE       the name of the filename to read from
+  -l, --location=VALUE       a location to limit the details to
+  -t, --type=VALUE           a type to limit the details to
+  -v                         make the output be in a verbose mode
+  -h, --help                 show this message and exit
+  -s, --separator=VALUE      provide a custom separator for the entries
+  -n                         use new line as a separator
+      --location-only        show just the location information, note this is
+                               still limited by the type
+  -L, --no-location-limit    no limit on the location
+  -T, --no-type-limit        no limit on the types
+  -X, --no-console-print     dont print the output to the console
+  -Z, --no-clipboard-set     dont set the clipboard
+  -o, --outfile=VALUE        write the output to a file
+  -d, --download             download the file even if not processing file
+  -D, --no-download          dont download the file
+  -P, --no-process           dont process the file
+  -c, --cache-file=VALUE     set the name of the cache file, the default is
+                               delegated-apnic-extended-latest.cached
+```							   
+# Information
+An explanation of the source file and it's format can be found here ftp://ftp.apnic.net/pub/apnic/stats/apnic/README.TXT
