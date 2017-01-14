@@ -2,7 +2,7 @@
 Simply to take the format which APNIC releases and turn it into a more useful format
 
 # Running the file
-Just running the file will download the latest version from the ftp and output AU location ipv4 address ranges in en.wikipedia.org/wiki/CIDR_notation format.
+Just running the file will download the latest version from the ftp and output AU location ipv4 address ranges in http://en.wikipedia.org/wiki/CIDR_notation format.
 
 Output is on both the console and put onto the clipboard
 
