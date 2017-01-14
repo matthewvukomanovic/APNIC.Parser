@@ -320,6 +320,7 @@ namespace apnicparser
 
         private static void Write(string value)
         {
+            value = value ?? string.Empty;
             sb.Append(value);
             Console.Write(value);
         }
