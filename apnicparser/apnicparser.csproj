@@ -41,8 +41,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ClipboardHelper.cs" />
+    <Compile Include="CommandLineOptions.cs" />
+    <Compile Include="Mono.Options.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="DebugClasses.cs" />
+    <Compile Include="WriteHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

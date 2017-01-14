@@ -16,87 +16,50 @@ namespace apnicparser
 {
     class Program
     {
-        static StringBuilder sb = new StringBuilder();
-
-#if DEBUG
-        public class Range
-        {
-            public uint Start;
-            public uint End;
-
-            public uint Total { get { return End - Start + 1; } }
-
-            public Range()
-            {
-            }
-
-            public Range(uint start, uint end)
-            {
-                Start = start;
-                End = end;
-            }
-
-            public static Range ExtendRangeOrNew(Range existing, uint start, uint end)
-            {
-                if(existing != null && existing.End == start - 1)
-                {
-                    existing.End = end;
-                }
-                else
-                {
-                    return new Range(start, end);
-                }
-                return null;
-            }
-        }
-
-        public class RangeGaps
-        {
-            public readonly List<Range> FilledRanges = new List<Range>();
-            public readonly List<Range> MissingRanges = new List<Range>();
-
-            public Range CurrentRange = null;
-
-            public void AddNewRange(uint start, uint end)
-            {
-                var newRange = Range.ExtendRangeOrNew(CurrentRange, start, end);
-
-                if (CurrentRange == null)
-                {
-                    FilledRanges.Add(newRange);
-                    CurrentRange = newRange;
-                }
-                else if( newRange != null)
-                {
-                    var missingRange = new Range(CurrentRange.End + 1, newRange.Start - 1);
-                    MissingRanges.Add(missingRange);
-                    FilledRanges.Add(newRange);
-                    CurrentRange = newRange;
-                }
-            }
-        }
-#endif
-
         static void Main(string[] args)
         {
-            // The readme file for the original release is ftp://ftp.apnic.net/pub/apnic/stats/apnic/README.TXT
-
-            //Downloaded from ftp://ftp.apnic.net/public/apnic/stats/apnic/delegated-apnic-extended-latest
-            string file = @":";
-            string[] limitLocaions = { "au", };
-            string[] limitTypes = { "ipv4", };
-
-            if (args.Length > 0)
+            var p = new Program();
+            try
             {
-                file = args[0];
+                p.RunProgram(args);
+            }
+            catch (Exception exc)
+            {
+                Console.Error.WriteLine(exc.Message);
+                try
+                {
+                    p._cleanupWriter?.Dispose();
+                }
+                catch
+                {
+                    // ignore
+                }
+            }
+        }
+
+        private Program()
+        {
+        }
+
+        public WriterHelper WriterHelper
+        {
+            get { return _writerHelper; }
+        }
+
+        public void RunProgram(string[] args)
+        {
+            CommandLineOptions options;
+            if (!TryOptions(args, out options))
+            {
+                return;
             }
 
-            if (file == ":")
-            {
-                file = "ftp://ftp.apnic.net/public/apnic/stats/apnic/delegated-apnic-extended-latest";
-            }
+            SetupWriteHelper(options);
 
-            if (file.Contains("://"))
+            // The readme file for the original apnic source file is ftp://ftp.apnic.net/pub/apnic/stats/apnic/README.TXT
+            // data source file downloaded from ftp://ftp.apnic.net/public/apnic/stats/apnic/delegated-apnic-extended-latest by default
+
+            if (options.Filename.Contains("://"))
             {
                 var tempFile = "delegated-apnic-extended-latest.temp";
                 var tempCachedFile = "delegated-apnic-extended-latest.cached";
@@ -109,7 +72,7 @@ namespace apnicparser
                         {
                             File.Delete(tempFile);
                         }
-                        client.DownloadFile(file, tempFile);
+                        client.DownloadFile(options.Filename, tempFile);
                         if (tempCacheInfo.Exists)
                         {
                             tempCacheInfo.Delete();
@@ -118,43 +81,18 @@ namespace apnicparser
                         File.Move(tempFile, tempCachedFile);
                     }
                 }
-                file = tempCachedFile;
+                options.Filename = tempCachedFile;
             }
 
-            if (args.Length > 1)
+
+            if (!File.Exists(options.Filename))
             {
-                var limitLocation = args[1].ToLower();
-                limitLocaions = limitLocation.Split(new[] { ',', ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-            }
-
-            if (args.Length > 2)
-            {
-                var limitType = args[2].ToLower();
-                limitTypes = limitType.Split(new[] { ',', ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-            }
-
-            bool shortOutput = true;
-
-            if (args.Length > 3)
-            {
-                var outputType = args[3].ToLower();
-
-                shortOutput = outputType != "long" && outputType != "l";
-            }
-
-            if (args.Length > 4)
-            {
-                Separator = args[4];
-            }
-
-            if (!File.Exists(file))
-            {
-                Console.Error.WriteLine("{0} doesn't exist, usage is\r\n [filename [location,location,location [type,type,type]]]", file);
+                Console.Error.WriteLine("{0} doesn't exist, usage is\r\n [filename [location,location,location [type,type,type]]]", options.Filename);
                 Console.ReadKey();
                 return;
             }
 
-            var lines = File.ReadAllLines(file);
+            var lines = File.ReadAllLines(options.Filename);
             lines = lines.Where(l => !l.StartsWith("#") && !l.Contains("*") && !l.Contains("-") && !l.Contains("+")).ToArray();
 
 #if DEBUG
@@ -173,12 +111,12 @@ namespace apnicparser
                 var status = sections[++offset];
                 var instances = sections[++offset];
 
-                if (limitLocaions.Length > 0 && !limitLocaions.Contains(place.ToLower()))
+                if (options.LimitLocations.Any() && !options.LimitLocations.Contains(place.ToLower()))
                 {
                     continue;
                 }
 
-                if (limitTypes.Length > 0 && !limitTypes.Contains(type.ToLower()))
+                if (options.LimitTypes.Any() && !options.LimitTypes.Contains(type.ToLower()))
                 {
                     continue;
                 }
@@ -229,14 +167,14 @@ namespace apnicparser
                     var startIp = new IPAddress(start);
                     var endIp = new IPAddress(end);
 
-                    if (!shortOutput)
+                    if (options.Verbose)
                     {
-                        Write(line + "|");
-                        Write(startIp + "|");
-                        Write(endIp + "|");
-                        Write(startIp + "/" + mask + "|");
+                        WriterHelper.Write(line + "|");
+                        WriterHelper.Write(startIp + "|");
+                        WriterHelper.Write(endIp + "|");
+                        WriterHelper.Write(startIp + "/" + mask + "|");
                     }
-                    Write(rangeStartStr + "/" + significantBits);
+                    WriterHelper.Write(rangeStartStr + "/" + significantBits);
 
                     if (rangeStartStr != startIp.ToString())
                     {
@@ -247,116 +185,100 @@ namespace apnicparser
                 }
                 else if (type.Equals("ipv6", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (!shortOutput)
+                    if (options.Verbose)
                     {
-                        Write(line + "|");
+                        WriterHelper.Write(line + "|");
                     }
-                    Write(rangeStartStr + "/" + numberAssigned);
+                    WriterHelper.Write(rangeStartStr + "/" + numberAssigned);
                 }
                 else if (type.Equals("asn", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (!shortOutput)
+                    if (options.Verbose)
                     {
-                        Write(line + "|");
+                        WriterHelper.Write(line + "|");
                     }
-                    Write(rangeStartStr + "+" + numberAssignedMinus1);
+                    WriterHelper.Write(rangeStartStr + "+" + numberAssignedMinus1);
                 }
 
-                WriteSeparator();
+                WriterHelper.WriteSeparator();
             }
 
 #if DEBUG
-            WriteLine();
-            WriteLine("Filled Ranges");
+            WriterHelper.WriteLine();
+            WriterHelper.WriteLine("Filled Ranges");
             foreach (var range in ranges.FilledRanges)
             {
                 var total = range.Total;
                 var startIp = new IPAddress(ReverseBytes(range.Start));
                 var endIp = new IPAddress(ReverseBytes(range.End));
 
-                WriteWithSeparator(startIp + "-" + endIp  + "-" + total);
+                WriterHelper.WriteWithSeparator(startIp + "-" + endIp + "-" + total);
             }
 
-            WriteLine();
-            WriteLine("Missing Ranges");
+            WriterHelper.WriteLine();
+            WriterHelper.WriteLine("Missing Ranges");
             foreach (var range in ranges.MissingRanges)
             {
                 var total = range.Total;
                 var startIp = new IPAddress(ReverseBytes(range.Start));
                 var endIp = new IPAddress(ReverseBytes(range.End));
 
-                WriteWithSeparator(startIp + "-" + endIp + "-" + total);
+                WriterHelper.WriteWithSeparator(startIp + "-" + endIp + "-" + total);
             }
 #endif
 
-            SetClipboard(sb.ToString());
+            if (!options.NoClipboardSet && WriterHelper?.OutputBuilder != null)
+            {
+                ClipboardHelper.SetClipboard(WriterHelper?.OutputBuilder?.ToString());
+            }
         }
+
+        private TextWriter _cleanupWriter = null;
+
+        private bool SetupWriteHelper(CommandLineOptions options)
+        {
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(options.OutputFile))
+                {
+                    var filestream = File.OpenWrite(options.OutputFile);
+                    _cleanupWriter = new StreamWriter(filestream);
+                }
+
+                _writerHelper = new WriterHelper(!options.NoConsolePrint, !options.NoClipboardSet, _cleanupWriter);
+                _writerHelper.Separator = options.Separator;
+            }
+            catch (Exception exc)
+            {
+                Console.Error.WriteLine(exc.Message);
+                return false;
+            }
+            return true;
+        }
+
+        private bool TryOptions(string[] args, out CommandLineOptions options)
+        {
+            options = new CommandLineOptions();
+            var success = !options.TryParse(args);
+
+            if (success || options.ShouldShowHelp)
+            {
+                if (!success)
+                {
+                    Console.WriteLine(options.ParseMessage);
+                }
+                options.Options.WriteOptionDescriptions(Console.Out);
+                return false;
+            }
+            return true;
+        }
+
+        private WriterHelper _writerHelper;
 
         private static uint ReverseBytes(uint value)
         {
             return (value & 0x000000FFU) << 24 | (value & 0x0000FF00U) << 8 |
                 (value & 0x00FF0000U) >> 8 | (value & 0xFF000000U) >> 24;
-        }
-
-        private static string Separator = "\r\n";
-
-        private static void WriteSeparator()
-        {
-            sb.Append(Separator);
-            Console.Write(Separator);
-        }
-
-        private static void WriteLine(string value = null)
-        {
-            value = value ?? string.Empty;
-            sb.AppendLine(value);
-            Console.WriteLine(value);
-        }
-
-        private static void WriteWithSeparator(string value = null)
-        {
-            Write((value ?? string.Empty) + Separator);
-        }
-
-        private static void Write(string value)
-        {
-            value = value ?? string.Empty;
-            sb.Append(value);
-            Console.Write(value);
-        }
-
-        [DllImport("user32.dll")]
-        internal static extern bool OpenClipboard(IntPtr hWndNewOwner);
-
-        [DllImport("user32.dll")]
-        internal static extern bool EmptyClipboard();
-
-        [DllImport("user32.dll")]
-        internal static extern bool CloseClipboard();
-
-        [DllImport("user32.dll")]
-        internal static extern bool SetClipboardData(uint uFormat, IntPtr data);
-
-        static void SetClipboard(string value)
-        {
-            if( OpenClipboard(IntPtr.Zero))
-            {
-                if( EmptyClipboard())
-                {
-                    var ptr = Marshal.StringToHGlobalUni(value);
-                    if(!SetClipboardData(13, ptr))
-                    {
-                        // Only free the data if setting the clipboard wasn't successful, the memory is managed by the system once it is set
-                        Marshal.FreeHGlobal(ptr);
-                    }
-                    if (!CloseClipboard())
-                    {
-#if DEBUG
-                        Console.Error.WriteLine("Could not close the clipboard");
-#endif
-                    }
-                }
-            }
         }
     }
 }
