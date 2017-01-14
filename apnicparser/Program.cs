@@ -28,7 +28,6 @@ namespace apnicparser
 
             public Range()
             {
-                
             }
 
             public Range(uint start, uint end)
@@ -174,7 +173,6 @@ namespace apnicparser
                 var status = sections[++offset];
                 var instances = sections[++offset];
 
-
                 if (limitLocaions.Length > 0 && !limitLocaions.Contains(place.ToLower()))
                 {
                     continue;
@@ -184,7 +182,6 @@ namespace apnicparser
                 {
                     continue;
                 }
-
 
                 var numberAssigned = uint.Parse(numberAssignedStr);
                 var numberAssignedMinus1 = numberAssigned - 1;
@@ -314,7 +311,6 @@ namespace apnicparser
             Console.Write(value);
         }
 
-
         [DllImport("user32.dll")]
         internal static extern bool OpenClipboard(IntPtr hWndNewOwner);
 
@@ -332,6 +328,5 @@ namespace apnicparser
             CloseClipboard();
             Marshal.FreeHGlobal(ptr);
         }
-
     }
 }
