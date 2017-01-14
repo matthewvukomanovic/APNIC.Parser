@@ -186,14 +186,13 @@ namespace apnicparser
                 var numberAssigned = uint.Parse(numberAssignedStr);
                 var numberAssignedMinus1 = numberAssigned - 1;
 
-                var significantBitsReverse = (int)Math.Log(numberAssigned, 2);
-
-                var originalBits = (int)Math.Pow(2, significantBitsReverse);
-                var significantBits = 32 - significantBitsReverse;
-
-
                 if (type.Equals("ipv4", StringComparison.OrdinalIgnoreCase))
                 {
+                    var significantBitsReverse = (int)Math.Log(numberAssigned, 2);
+
+                    var originalBits = (int)Math.Pow(2, significantBitsReverse);
+                    var significantBits = 32 - significantBitsReverse;
+
                     if (originalBits != numberAssigned)
                     {
 #if DEBUG
@@ -246,13 +245,21 @@ namespace apnicparser
 #endif
                     }
                 }
-                else
+                else if (type.Equals("ipv6", StringComparison.OrdinalIgnoreCase))
                 {
-                    Write(place + '|');
-                    Write(type + '|');
-                    Write(rangeStartStr + '|');
-                    Write(significantBits + "|");
-                    Write(numberAssignedStr + '|');
+                    if (!shortOutput)
+                    {
+                        Write(line + "|");
+                    }
+                    Write(rangeStartStr + "/" + numberAssigned);
+                }
+                else if (type.Equals("asn", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!shortOutput)
+                    {
+                        Write(line + "|");
+                    }
+                    Write(rangeStartStr + "+" + numberAssignedMinus1);
                 }
 
                 WriteSeparator();
