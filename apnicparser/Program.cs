@@ -149,7 +149,7 @@ namespace apnicparser
 
             if (!File.Exists(file))
             {
-                Console.WriteLine("{0} doesn't exist, usage is\r\n [filename [location,location,location [type,type,type]]]", file);
+                Console.Error.WriteLine("{0} doesn't exist, usage is\r\n [filename [location,location,location [type,type,type]]]", file);
                 Console.ReadKey();
                 return;
             }
@@ -273,7 +273,7 @@ namespace apnicparser
                 var startIp = new IPAddress(ReverseBytes(range.Start));
                 var endIp = new IPAddress(ReverseBytes(range.End));
 
-                WriteLine(startIp + "-" + endIp  + "-" + total);
+                WriteWithSeparator(startIp + "-" + endIp  + "-" + total);
             }
 
             WriteLine("Missing Ranges");
@@ -283,7 +283,7 @@ namespace apnicparser
                 var startIp = new IPAddress(ReverseBytes(range.Start));
                 var endIp = new IPAddress(ReverseBytes(range.End));
 
-                WriteLine(startIp + "-" + endIp + "-" + total);
+                WriteWithSeparator(startIp + "-" + endIp + "-" + total);
             }
 #endif
 
@@ -306,10 +306,16 @@ namespace apnicparser
             Console.Write(Separator);
         }
 
-        private static void WriteLine(string value)
+        private static void WriteLine(string value = null)
         {
+            value = value ?? string.Empty;
             sb.AppendLine(value);
             Console.WriteLine(value);
+        }
+
+        private static void WriteWithSeparator(string value = null)
+        {
+            Write((value ?? string.Empty) + Separator);
         }
 
         private static void Write(string value)
