@@ -212,11 +212,13 @@ namespace apnicparser
                 }
                 else if (type.Equals("asn", StringComparison.OrdinalIgnoreCase))
                 {
+                    ulong rangeStart = ulong.Parse(rangeStartStr);
+                    ulong rangeEnd = rangeStart + numberAssignedMinus1;
                     if (options.Verbose)
                     {
                         WriterHelper.Write(line + "|");
                     }
-                    WriterHelper.Write(rangeStartStr + "+" + numberAssignedMinus1);
+                    WriterHelper.Write(rangeStart + "|" + rangeEnd + "|" + numberAssigned);
                 }
 
                 WriterHelper.WriteSeparator();
