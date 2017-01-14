@@ -7,7 +7,7 @@ Just running the file will download the latest version from the ftp and output A
 Output is on both the console and put onto the clipboard
 
 # Usage is
-apnicparser [filename [location,location,... [ type,type,... [long|l]]]
+apnicparser [filename [location,location,... [ type,type,... [long|l [separator]]]]
 
 filename: can be a relative filename to the application, complete filename, or a web URI, or special name ":"
 
@@ -19,8 +19,8 @@ filename: can be a relative filename to the application, complete filename, or a
 
 location: is a comma separated list of the locations which should be included in the result
 
-type: is a comma separated list of the types which should be included in the result (note that only ipv4 does anything useful)
+type: is a comma separated list of the types which should be included in the result
 
 long or l : means that a longer more verbose form of the output should be output
 
-
+separator : the characters to separate the entries, this defaults to a newline but can be replaced with something like  " " to have spaces instead
