@@ -62,9 +62,9 @@ namespace apnicparser
             if (options.Filename.Contains("://"))
             {
                 var tempFile = "delegated-apnic-extended-latest.temp";
-                var tempCachedFile = "delegated-apnic-extended-latest.cached";
+                var tempCachedFile = options.CacheFileName;
                 var tempCacheInfo = new FileInfo(tempCachedFile);
-                if (!tempCacheInfo.Exists || tempCacheInfo.LastWriteTime < DateTime.Now.AddDays(-1))
+                if (!(options.NoDownloadFile) && (!tempCacheInfo.Exists || tempCacheInfo.LastWriteTime < DateTime.Now.AddDays(-1)))
                 {
                     using (var client = new WebClient())
                     {
@@ -84,11 +84,14 @@ namespace apnicparser
                 options.Filename = tempCachedFile;
             }
 
-
             if (!File.Exists(options.Filename))
             {
-                Console.Error.WriteLine("{0} doesn't exist, usage is\r\n [filename [location,location,location [type,type,type]]]", options.Filename);
-                Console.ReadKey();
+                Console.Error.WriteLine("File to process does not exist, try using --help to get usage");
+                return;
+            }
+
+            if (options.ExcludeProcessingFile)
+            {
                 return;
             }
 
@@ -259,9 +262,9 @@ namespace apnicparser
         private bool TryOptions(string[] args, out CommandLineOptions options)
         {
             options = new CommandLineOptions();
-            var success = !options.TryParse(args);
+            var success = options.TryParse(args);
 
-            if (success || options.ShouldShowHelp)
+            if (!success || options.ShouldShowHelp)
             {
                 if (!success)
                 {
