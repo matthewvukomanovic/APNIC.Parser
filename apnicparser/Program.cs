@@ -266,6 +266,7 @@ namespace apnicparser
             }
 
 #if DEBUG
+            WriteLine();
             WriteLine("Filled Ranges");
             foreach (var range in ranges.FilledRanges)
             {
@@ -276,6 +277,7 @@ namespace apnicparser
                 WriteWithSeparator(startIp + "-" + endIp  + "-" + total);
             }
 
+            WriteLine();
             WriteLine("Missing Ranges");
             foreach (var range in ranges.MissingRanges)
             {
