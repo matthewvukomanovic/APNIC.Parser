@@ -101,6 +101,8 @@ namespace apnicparser
 #if DEBUG
             RangeGaps ranges = new RangeGaps();
 #endif
+            Dictionary<string, int> locationList = new Dictionary<string, int>();
+
             foreach (var line in lines)
             {
                 var sections = line.Split('|');
@@ -114,12 +116,26 @@ namespace apnicparser
                 var status = sections[++offset];
                 var instances = sections[++offset];
 
-                if (options.LimitLocations.Any() && !options.LimitLocations.Contains(place.ToLower()))
+
+                if (options.LimitTypes.Any() && !options.LimitTypes.Contains(type.ToLower()))
                 {
                     continue;
                 }
 
-                if (options.LimitTypes.Any() && !options.LimitTypes.Contains(type.ToLower()))
+                if (options.LocationOnly)
+                {
+                    if (!locationList.ContainsKey(place))
+                    {
+                        locationList.Add(place, 1);
+                    }
+                    else
+                    {
+                        locationList[place] = locationList[place] + 1;
+                    }
+                    continue;
+                }
+
+                if (options.LimitLocations.Any() && !options.LimitLocations.Contains(place.ToLower()))
                 {
                     continue;
                 }
@@ -206,6 +222,21 @@ namespace apnicparser
                 WriterHelper.WriteSeparator();
             }
 
+            if (options.LocationOnly)
+            {
+                foreach (var location in locationList.OrderBy(i => i.Key))
+                {
+                    if (options.Verbose)
+                    {
+                        WriterHelper.WriteWithSeparator(location.Key + "(" + location.Value + ")");
+                    }
+                    else
+                    {
+                        WriterHelper.WriteWithSeparator(location.Key);
+                    }
+                }
+            }
+
 #if DEBUG
             WriterHelper.WriteLine();
             WriterHelper.WriteLine("Filled Ranges");
@@ -234,6 +265,8 @@ namespace apnicparser
             {
                 ClipboardHelper.SetClipboard(WriterHelper?.OutputBuilder?.ToString());
             }
+
+            _cleanupWriter?.Dispose();
         }
 
         private TextWriter _cleanupWriter = null;
@@ -244,8 +277,7 @@ namespace apnicparser
             {
                 if (!string.IsNullOrWhiteSpace(options.OutputFile))
                 {
-                    var filestream = File.OpenWrite(options.OutputFile);
-                    _cleanupWriter = new StreamWriter(filestream);
+                    _cleanupWriter = File.CreateText(options.OutputFile);
                 }
 
                 _writerHelper = new WriterHelper(!options.NoConsolePrint, !options.NoClipboardSet, _cleanupWriter);

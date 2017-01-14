@@ -19,7 +19,7 @@ namespace apnicparser
                 { "h|help", "show this message and exit", o => ShouldShowHelp = o != null },
                 { "s|separator=", "provide a custom separator for the entries", UseCustomSeparator},
                 { "n", "use new line as a separator", o => { if (o != null) { UseCustomSeparator("\r\n"); }}},
-                //{ "country-only", "show just the country information", o => ShowOnlyCountry = o},
+                { "location-only", "show just the location information, note this is still limited by the type", o => LocationOnly = o != null},
                 { "L|no-location-limit", "no limit on the location", o => NoLocationLimit = o != null},
                 { "T|no-type-limit", "no limit on the types", o => NoTypeLimit = o != null},
                 { "X|no-console-print", "dont print the output to the console", o => NoConsolePrint = o != null},
@@ -34,6 +34,7 @@ namespace apnicparser
             };
             return options;
         }
+
 
         public bool TryParse(IEnumerable<string> args)
         {
@@ -87,7 +88,7 @@ namespace apnicparser
                 return false;
             }
         }
-        
+        public bool LocationOnly { get; set; }
         public bool Verbose { get; set; } = false;
         public bool ShouldShowHelp { get; set; } = false;
         public string Filename { get; set; } = "ftp://ftp.apnic.net/public/apnic/stats/apnic/delegated-apnic-extended-latest";
