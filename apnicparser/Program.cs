@@ -290,8 +290,6 @@ namespace apnicparser
 #endif
 
             SetClipboard(sb.ToString());
-
-            Console.ReadKey();
         }
 
         private static uint ReverseBytes(uint value)
