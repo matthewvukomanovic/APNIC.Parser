@@ -143,6 +143,11 @@ namespace apnicparser
                 shortOutput = outputType != "long" && outputType != "l";
             }
 
+            if (args.Length > 4)
+            {
+                Separator = args[4];
+            }
+
             if (!File.Exists(file))
             {
                 Console.WriteLine("{0} doesn't exist, usage is\r\n [filename [location,location,location [type,type,type]]]", file);
@@ -253,7 +258,7 @@ namespace apnicparser
                     Write(numberAssignedStr + '|');
                 }
 
-                WriteLine();
+                WriteSeparator();
             }
 
 #if DEBUG
@@ -289,11 +294,12 @@ namespace apnicparser
                 (value & 0x00FF0000U) >> 8 | (value & 0xFF000000U) >> 24;
         }
 
+        private static string Separator = "\r\n";
 
-        private static void WriteLine()
+        private static void WriteSeparator()
         {
-            sb.AppendLine();
-            Console.WriteLine();
+            sb.Append(Separator);
+            Console.Write(Separator);
         }
 
         private static void WriteLine(string value)
