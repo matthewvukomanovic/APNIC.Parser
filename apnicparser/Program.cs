@@ -328,6 +328,9 @@ namespace apnicparser
         internal static extern bool OpenClipboard(IntPtr hWndNewOwner);
 
         [DllImport("user32.dll")]
+        internal static extern bool EmptyClipboard();
+
+        [DllImport("user32.dll")]
         internal static extern bool CloseClipboard();
 
         [DllImport("user32.dll")]
@@ -335,11 +338,24 @@ namespace apnicparser
 
         static void SetClipboard(string value)
         {
-            OpenClipboard(IntPtr.Zero);
-            var ptr = Marshal.StringToHGlobalUni(value);
-            SetClipboardData(13, ptr);
-            CloseClipboard();
-            Marshal.FreeHGlobal(ptr);
+            if( OpenClipboard(IntPtr.Zero))
+            {
+                if( EmptyClipboard())
+                {
+                    var ptr = Marshal.StringToHGlobalUni(value);
+                    if(!SetClipboardData(13, ptr))
+                    {
+                        // Only free the data if setting the clipboard wasn't successful, the memory is managed by the system once it is set
+                        Marshal.FreeHGlobal(ptr);
+                    }
+                    if (!CloseClipboard())
+                    {
+#if DEBUG
+                        Console.Error.WriteLine("Could not close the clipboard");
+#endif
+                    }
+                }
+            }
         }
     }
 }
